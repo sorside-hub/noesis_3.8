@@ -122,7 +122,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   return (
     <aside className="w-full h-full flex flex-col bg-bg-surface border-l border-border-default relative overflow-hidden select-none">
       {/* MAIN BODY CONTENT */}
-      <div className="flex-1 overflow-y-auto p-4 pb-20 space-y-3">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-3 ${
+        activeTab === 'CHAT' && isKeyboardOpen ? 'pb-4' : 'pb-20'
+      }`}>
         {!activeNode ? (
           <div className="h-full flex items-center justify-center text-center text-text-muted text-sm py-24">
             No active note selected.
