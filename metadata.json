@@ -1,0 +1,6 @@
+{
+  "name": "Noesis — AI Second Brain",
+  "description": "Offline-first PKM and AI Second Brain Vault with local vector search and rich Markdown editor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
