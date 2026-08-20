@@ -93,7 +93,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({ activeNode, onUpdateMetadata }
       {/* Header section */}
       <div className="flex items-center justify-between pb-2 border-b border-border-default/50">
         <h3 className="text-xs font-semibold text-text-heading flex items-center gap-1.5 uppercase tracking-wider">
-          <MessageSquare size={14} className="text-accent-primary" />
+          <MessageSquare size={14} className="text-text-secondary" />
           Ask Note
         </h3>
         {messages.length > 0 && (
@@ -159,7 +159,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({ activeNode, onUpdateMetadata }
       <div className="pt-2 border-t border-border-default/50">
         <form 
           onSubmit={handleSend}
-          className="relative flex items-center bg-bg-elevated border border-border-default rounded-xl focus-within:border-accent-primary/50 transition-colors"
+          className="relative flex items-center bg-bg-elevated border border-border-default rounded-xl focus-within:border-border-default transition-colors"
         >
           <textarea
             value={input}

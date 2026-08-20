@@ -28,8 +28,7 @@ export async function handleEditorAction(
           prompt = `Rewrite the following text in a ${targetTone} tone. Preserve the original meaning. Return ONLY the rewritten text without any preamble, explanation, or quotes.\n\nText:\n${text}`;
           break;
         case 'translate':
-          const targetLang = extraContext || 'English';
-          prompt = `Translate the following text into ${targetLang}. Return ONLY the translated text without any preamble, explanation, or quotes.\n\nText:\n${text}`;
+          prompt = `Detect the language of the following text. If it is in Indonesian, translate it to clear natural English. If it is in any other language, translate it to natural Indonesian. Keep markdown formatting intact. Return ONLY the translated text without any preamble, explanation, or quotes.\n\nText:\n${text}`;
           break;
         case 'expand':
           prompt = `Expand upon the following text, providing more detail and context while maintaining the original language and core message. Return ONLY the expanded text without any preamble, explanation, or quotes.\n\nText:\n${text}`;

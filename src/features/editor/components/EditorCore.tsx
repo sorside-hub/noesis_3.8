@@ -309,24 +309,16 @@ export const EditorCore = forwardRef<EditorCoreRef, EditorCoreProps>(({ title, o
         }
 
         // Check for text selection for AI Context Menu
-        if (!selection.empty) {
-          const from = selection.from;
-          const to = selection.to;
-          if (to - from > 0) {
-            // Only update state if it's a real selection change to avoid resetting state while typing in the popup
-            if (update.selectionSet || update.docChanged) {
-              const text = view.state.sliceDoc(from, to);
-              const coords = view.coordsAtPos(from);
-              if (coords) {
-                setAiMenuState({
-                  isOpen: true,
-                  text,
-                  from,
-                  to,
-                  position: { top: coords.top, left: coords.left },
-                });
-              }
-            }
+        if (!selection.empty && selection.to - selection.from > 0) {
+          if (update.selectionSet || update.docChanged) {
+            const text = view.state.sliceDoc(selection.from, selection.to);
+            setAiMenuState({
+              isOpen: true,
+              text,
+              from: selection.from,
+              to: selection.to,
+              position: { top: 0, left: 0 },
+            });
           }
         } else {
           setAiMenuState((prev) => (prev.isOpen ? { ...prev, isOpen: false } : prev));

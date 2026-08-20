@@ -6,125 +6,185 @@ import {
   Globe, 
   Maximize,
   ArrowRight,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react';
 import { EditorActionType, useAiActions } from '../hooks/useAiActions';
 
 interface AiContextMenuProps {
-  position: { top: number; left: number };
+  position?: { top: number; left: number };
   selectedText: string;
   onActionComplete: (result: string) => void;
   onClose: () => void;
 }
 
 export const AiContextMenu: React.FC<AiContextMenuProps> = ({ 
-  position, 
   selectedText, 
   onActionComplete,
   onClose
 }) => {
   const { isLoading, error, executeAction } = useAiActions();
   const [customPrompt, setCustomPrompt] = useState('');
+  const [activeAction, setActiveAction] = useState<EditorActionType | 'custom' | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const cleanupRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
+    // Delay listener registration slightly so initial touch/mouse event of selection doesn't immediately close the menu
+    const timer = setTimeout(() => {
+      const handleClickOutside = (e: Event) => {
+        if (isLoading) return;
+        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+          onClose();
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      cleanupRef.current = () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      if (cleanupRef.current) {
+        cleanupRef.current();
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  }, [onClose, isLoading]);
 
   const handleAction = async (action: EditorActionType, extraContext?: string) => {
+    setActiveAction(action);
     const result = await executeAction(action, selectedText, extraContext);
     if (result) {
       onActionComplete(result);
     }
+    setActiveAction(null);
   };
 
   const handleSubmitCustom = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customPrompt.trim()) return;
+    setActiveAction('custom');
     handleAction('custom', customPrompt);
   };
 
-  const topPos = Math.max(10, position.top - 60);
+  const getLoadingText = () => {
+    switch (activeAction) {
+      case 'grammar': return 'Memperbaiki grammar...';
+      case 'summarize': return 'Merangkum teks...';
+      case 'tone': return 'Menyesuaikan gaya bahasa...';
+      case 'translate': return 'Menerjemahkan teks...';
+      case 'expand': return 'Mengembangkan teks...';
+      case 'custom': return 'Memproses instruksi khusus...';
+      default: return 'AI sedang memproses...';
+    }
+  };
 
   return (
     <div 
       ref={menuRef}
-      className="fixed z-50 flex flex-col gap-2 bg-bg-surface border border-border-default rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100"
-      style={{ top: topPos, left: Math.max(10, position.left) }}
+      className="fixed bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-sm sm:max-w-md bg-bg-surface/95 dark:bg-bg-surface/90 backdrop-blur-md border border-border-default rounded-2xl shadow-2xl p-2.5 animate-in fade-in slide-in-from-bottom-3 duration-150 select-none"
     >
-      <div className="flex items-center px-1 py-1 gap-1 border-b border-border-default bg-bg-primary/50 backdrop-blur-sm">
-        <button 
-          onClick={() => handleAction('grammar')}
-          disabled={isLoading}
-          className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          title="Fix Grammar"
-        >
-          <Wand2 size={16} />
-        </button>
-        <button 
-          onClick={() => handleAction('summarize')}
-          disabled={isLoading}
-          className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          title="Summarize"
-        >
-          <AlignLeft size={16} />
-        </button>
-        <button 
-          onClick={() => handleAction('tone')}
-          disabled={isLoading}
-          className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          title="Change Tone"
-        >
-          <MessageSquare size={16} />
-        </button>
-        <button 
-          onClick={() => handleAction('translate')}
-          disabled={isLoading}
-          className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          title="Translate to English"
-        >
-          <Globe size={16} />
-        </button>
-        <button 
-          onClick={() => handleAction('expand')}
-          disabled={isLoading}
-          className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-md flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          title="Expand"
-        >
-          <Maximize size={16} />
-        </button>
-      </div>
-      
-      <form onSubmit={handleSubmitCustom} className="flex items-center px-2 pb-2 pt-1 gap-2">
-        <input
-          type="text"
-          value={customPrompt}
-          onChange={(e) => setCustomPrompt(e.target.value)}
-          placeholder="Ask AI to modify..."
-          className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none w-48"
-          disabled={isLoading}
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') onClose();
-          }}
-        />
-        <button 
-          type="submit" 
-          disabled={isLoading || !customPrompt.trim()}
-          className="p-1 text-text-secondary hover:text-text-primary disabled:opacity-50"
-        >
-          {isLoading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-        </button>
-      </form>
+      {isLoading && activeAction ? (
+        <div className="flex items-center justify-center gap-3 py-3 px-2 animate-in fade-in zoom-in-95 duration-200">
+          <Loader2 className="animate-spin text-accent-primary shrink-0" size={16} />
+          <span className="text-sm font-medium bg-gradient-to-r from-accent-primary to-accent-hover bg-clip-text text-transparent">
+            {getLoadingText()}
+          </span>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {/* Top Header Row with quick action buttons & close button */}
+          <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-border-default/60">
+            <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none]">
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider px-1 shrink-0">
+                AI Edit:
+              </span>
+              <button 
+                type="button"
+                onClick={() => handleAction('grammar')}
+                className="px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-lg flex items-center gap-1 transition-colors cursor-pointer shrink-0 font-medium"
+                title="Fix Grammar"
+              >
+                <Wand2 size={13} />
+                <span>Grammar</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleAction('summarize')}
+                className="px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-lg flex items-center gap-1 transition-colors cursor-pointer shrink-0 font-medium"
+                title="Summarize"
+              >
+                <AlignLeft size={13} />
+                <span>Summarize</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleAction('tone')}
+                className="px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-lg flex items-center gap-1 transition-colors cursor-pointer shrink-0 font-medium"
+                title="Tone"
+              >
+                <MessageSquare size={13} />
+                <span>Tone</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleAction('translate')}
+                className="px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-lg flex items-center gap-1 transition-colors cursor-pointer shrink-0 font-medium"
+                title="Translate"
+              >
+                <Globe size={13} />
+                <span>Translate</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleAction('expand')}
+                className="px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-elevated rounded-lg flex items-center gap-1 transition-colors cursor-pointer shrink-0 font-medium"
+                title="Expand"
+              >
+                <Maximize size={13} />
+                <span>Expand</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 text-text-muted hover:text-text-primary rounded-lg hover:bg-bg-hover transition-colors shrink-0 cursor-pointer ml-1"
+              title="Close AI Menu"
+            >
+              <X size={15} />
+            </button>
+          </div>
+          
+          {/* Custom Instruction Input */}
+          <form onSubmit={handleSubmitCustom} className="flex items-center gap-2 bg-bg-elevated/70 border border-border-default/60 rounded-xl px-2.5 py-1.5 focus-within:border-border-default transition-colors">
+            <input
+              type="text"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              placeholder="Ask AI to modify selected text..."
+              className="flex-1 bg-transparent text-xs text-text-primary placeholder:text-text-muted outline-none w-full"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') onClose();
+              }}
+            />
+            <button 
+              type="submit" 
+              disabled={!customPrompt.trim()}
+              className="p-1 rounded-md bg-accent-primary text-white hover:bg-accent-hover disabled:opacity-40 disabled:bg-bg-primary disabled:text-text-muted transition-colors cursor-pointer shrink-0"
+            >
+              <ArrowRight size={13} />
+            </button>
+          </form>
+        </div>
+      )}
       
       {error && (
-        <div className="px-2 pb-2 text-xs text-red-500 max-w-[240px] truncate">
+        <div className="px-1 text-xs text-red-500 font-medium">
           {error}
         </div>
       )}

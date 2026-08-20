@@ -35,7 +35,11 @@ export const useAiActions = (): UseAiActionsReturn => {
         throw new Error(data.error || 'Failed to execute AI action');
       }
 
-      return data.text;
+      if (data.success === false) {
+          throw new Error(data.attempts?.[data.attempts.length - 1]?.error || 'Failed to generate text');
+      }
+
+      return data.data?.text || data.text;
     } catch (err: any) {
       console.error(`[useAiActions] Error executing ${action}:`, err);
       setError(err.message || 'An unexpected error occurred');
