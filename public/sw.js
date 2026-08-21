@@ -6,8 +6,8 @@ const STATIC_ASSETS = [
   '/favicon.ico',
   '/logo-light.webp',
   '/logo-dark.webp',
-  '/pwa-192x192.png',
-  '/pwa-512x512.png'
+  '/pwa-maskable-192x192.png',
+  '/pwa-maskable-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {
