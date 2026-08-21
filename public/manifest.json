@@ -4,8 +4,8 @@
   "description": "Offline-first Personal Knowledge Management & Second Brain powered by local AI",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#090d16",
-  "theme_color": "#090d16",
+  "background_color": "#131313",
+  "theme_color": "#131313",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [
