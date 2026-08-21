@@ -35,17 +35,33 @@ export const pushNodeToCloud = async (node: FileNode): Promise<void> => {
   }
 };
 
-// Delete nodes from Supabase
+// Delete nodes and their associated AI metadata and embeddings from Supabase
 export const deleteNodesFromCloud = async (ids: string[]): Promise<void> => {
+  if (!ids || ids.length === 0) return;
   try {
     const userId = await getUserId();
     if (!userId) return; // Not logged in, skip sync
 
+    // 1. Delete associated AI analysis metadata
+    await supabase
+      .from('note_metadata')
+      .delete()
+      .in('note_id', ids)
+      .eq('user_id', userId);
+
+    // 2. Delete associated RAG vector embeddings
+    await supabase
+      .from('note_embeddings')
+      .delete()
+      .in('note_id', ids)
+      .eq('user_id', userId);
+
+    // 3. Delete nodes themselves (will also trigger ON DELETE CASCADE in DB)
     const { error } = await supabase
       .from('nodes')
       .delete()
       .in('id', ids)
-      .eq('user_id', userId); // Extra safety
+      .eq('user_id', userId);
 
     if (error) {
       console.error('Supabase delete error:', error.message);

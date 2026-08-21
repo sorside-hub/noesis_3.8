@@ -53,7 +53,7 @@ END $$;
 
 -- 3. TABEL METADATA AI (Ringkasan, Konsep, Kata Kunci)
 CREATE TABLE IF NOT EXISTS note_metadata (
-  note_id TEXT PRIMARY KEY,
+  note_id TEXT PRIMARY KEY REFERENCES nodes(id) ON DELETE CASCADE,
   content_hash TEXT NOT NULL,
   summary TEXT,
   keywords TEXT[],
@@ -64,6 +64,20 @@ CREATE TABLE IF NOT EXISTS note_metadata (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Migrasi: Pasang Foreign Key CASCADE ke nodes (dan bersihkan orphan lama jika ada)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'fk_note_metadata_nodes' AND table_name = 'note_metadata'
+  ) THEN
+    DELETE FROM note_metadata WHERE note_id NOT IN (SELECT id FROM nodes);
+    ALTER TABLE note_metadata
+      ADD CONSTRAINT fk_note_metadata_nodes
+      FOREIGN KEY (note_id) REFERENCES nodes(id) ON DELETE CASCADE;
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
 ALTER TABLE note_metadata ENABLE ROW LEVEL SECURITY;
 
@@ -79,7 +93,7 @@ END $$;
 -- 4. TABEL VEKTOR EMBEDDING (RAG Vector Database)
 CREATE TABLE IF NOT EXISTS note_embeddings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  note_id TEXT NOT NULL,
+  note_id TEXT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
   chunk_index INTEGER NOT NULL,
   source_type TEXT NOT NULL,
   content TEXT NOT NULL,
@@ -87,6 +101,20 @@ CREATE TABLE IF NOT EXISTS note_embeddings (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Migrasi: Pasang Foreign Key CASCADE ke nodes (dan bersihkan orphan lama jika ada)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'fk_note_embeddings_nodes' AND table_name = 'note_embeddings'
+  ) THEN
+    DELETE FROM note_embeddings WHERE note_id NOT IN (SELECT id FROM nodes);
+    ALTER TABLE note_embeddings
+      ADD CONSTRAINT fk_note_embeddings_nodes
+      FOREIGN KEY (note_id) REFERENCES nodes(id) ON DELETE CASCADE;
+  END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
 ALTER TABLE note_embeddings ENABLE ROW LEVEL SECURITY;
 
